@@ -34,6 +34,12 @@ See [`examples/`](examples) for 5 real transcripts, including two non-trivial on
 
 ## Architecture
 
+**Exploded view of every piece and how the pieces connect (browser, edge, agent core, data, local mode, team):** [`docs/architecture.md`](docs/architecture.md)
+
+[![Exploded architecture](docs/architecture.png)](docs/architecture.md)
+
+Overview:
+
 ```mermaid
 flowchart LR
     subgraph Client
