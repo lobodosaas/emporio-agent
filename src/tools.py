@@ -129,7 +129,10 @@ def search_products(query=None, category=None, min_price=None, max_price=None, i
         "products": [product_view(p) for p in products[:MAX_RESULTS]],
     }
     if len(products) > MAX_RESULTS:
-        result["note"] = f"showing {MAX_RESULTS} of {len(products)}; ask the customer to narrow down"
+        # Give the model the arithmetic instead of letting it count (it miscounted in testing).
+        result["not_shown"] = len(products) - MAX_RESULTS
+        result["note"] = (f"showing {MAX_RESULTS} of {len(products)} matching products; "
+                          f"{result['not_shown']} more not shown. Say these exact numbers; ask the customer to narrow down")
     if not products:
         result["note"] = "no matching product in the catalog"
     return result

@@ -24,6 +24,14 @@ def test_browse_by_category_and_price_lists_only_available():
         assert p.get("price", p.get("promo_price")) <= 1000
 
 
+def test_truncated_results_report_exact_remaining_count():
+    result = search_products(category="Violões", max_price=1000)
+    assert result["count"] == 12
+    assert len(result["products"]) == 8
+    assert result["not_shown"] == 4
+    assert "4 more not shown" in result["note"]
+
+
 def test_active_promotion_shows_original_price_and_no_pix_stacking():
     # promotion 12: product 127, 10%, active
     product = search_products(query="KAL-700T")["products"][0]
