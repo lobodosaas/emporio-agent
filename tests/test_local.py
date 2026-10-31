@@ -102,9 +102,9 @@ def local_server(tmp_path):
     server.shutdown()
 
 
-def call(base, path, body=None):
+def call(base, path, body=None, headers=None):
     data = json.dumps(body).encode() if body is not None else None
-    request = urllib.request.Request(base + path, data=data, headers={"content-type": "application/json"})
+    request = urllib.request.Request(base + path, data=data, headers={"content-type": "application/json", **(headers or {})})
     try:
         with urllib.request.urlopen(request) as r:
             return r.status, r.read()
@@ -127,3 +127,14 @@ def test_local_server_chat_memory_and_pages(local_server):
     assert status == 200 and b"<title>" in page
     assert call(local_server, "/../pyproject.toml")[0] == 404
     assert len(json.loads(call(local_server, "/api/home")[1])["featured"]) > 0
+
+
+def test_local_server_rejects_cross_site_requests(local_server):
+    sid = {"session_id": "test-local-123", "message": "oi"}
+    # another website posting a "simple" form/text request (no CORS preflight)
+    assert call(local_server, "/api/chat", sid, {"content-type": "text/plain"})[0] == 403
+    assert call(local_server, "/api/chat", sid, {"origin": "https://evil.example"})[0] == 403
+    # DNS rebinding: attacker domain resolving to 127.0.0.1
+    assert call(local_server, "/api/inbox", headers={"host": "evil.example"})[0] == 403
+    port = local_server.rsplit(":", 1)[1]
+    assert call(local_server, "/api/chat", sid, {"origin": f"http://localhost:{port}"})[0] == 200

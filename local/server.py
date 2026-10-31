@@ -100,6 +100,25 @@ def make_handler(store, llm):
             self.end_headers()
             self.wfile.write(body)
 
+        def is_local_request(self, post=False):
+            """Block other websites from driving this server (and spending the API key).
+
+            - Host must be localhost/127.0.0.1 on our port (stops DNS rebinding).
+            - Origin, when the browser sends one, must be the same local origin.
+            - POST bodies must be JSON: a cross-site page cannot send that without a
+              CORS preflight, and this server never answers preflights.
+            """
+            port = self.server.server_address[1]
+            allowed = {f"localhost:{port}", f"127.0.0.1:{port}"}
+            if self.headers.get("host") not in allowed:
+                return False
+            origin = self.headers.get("origin")
+            if origin and origin not in {f"http://{h}" for h in allowed}:
+                return False
+            if post and (self.headers.get("content-type") or "").split(";")[0].strip() != "application/json":
+                return False
+            return True
+
         def read_json(self):
             try:
                 length = int(self.headers.get("content-length") or 0)
@@ -109,6 +128,8 @@ def make_handler(store, llm):
             return body if isinstance(body, dict) else None
 
         def do_GET(self):
+            if not self.is_local_request():
+                return self.send_json({"error": "forbidden"}, 403)
             path = self.path.split("?")[0].split("#")[0]
             if path == "/api/home":
                 return self.send_json(site_data.home())
@@ -138,6 +159,8 @@ def make_handler(store, llm):
             self.wfile.write(body)
 
         def do_POST(self):
+            if not self.is_local_request(post=True):
+                return self.send_json({"error": "forbidden"}, 403)
             body = self.read_json()
             if body is None:
                 return self.send_json({"error": "body must be a JSON object"}, 400)
