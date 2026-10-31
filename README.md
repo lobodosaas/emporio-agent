@@ -164,11 +164,11 @@ uv run python scripts/chat.py -m "Quanto custa o Takamine GD20?" -m "e no pix?" 
 uv run --group local pytest
 ```
 
-35 tests cover:
+36 tests cover:
 - catalog search, promotion and PIX rules, and order identity checks (including brute-force-style inputs);
 - every policy topic, and the PDF → web page parser (with a check that every word of the manual is published);
 - the agent loop: tool round trip, malformed arguments, step limit, LLM failure, history cap;
-- the provider adapters (Claude message conversion, refusal handling, OpenAI-compatible requests) and the local HTTP server;
+- the provider adapters (Claude message conversion, refusal handling, OpenAI-compatible requests) and the local HTTP server, including its block on cross-site requests;
 - store hours.
 
 ### Rebuild the knowledge base
