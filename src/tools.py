@@ -119,9 +119,16 @@ def search_products(query=None, category=None, min_price=None, max_price=None, i
         best = max((s for s, _ in scored), default=0)
         # If some products match every word, keep only those (exact model lookup).
         products = [p for s, p in scored if s == best] if best == len(query_tokens) else [p for _, p in scored]
-        # A named product is shown whatever its status, so the agent can say it is unavailable.
-    elif not include_unavailable:
-        products = [p for p in products if availability(p) == "in_stock"]
+
+    if not include_unavailable:
+        # Browsing ("violão até R$ 1000") lists only what can be bought today. A product the
+        # customer names ("Giannini GF-3D") is kept whatever its status, so the agent can say
+        # it is sold out and suggest alternatives.
+        def named(p):
+            name = set(tokens(p["name"]))
+            return bool(query_tokens) and all(_token_matches(t, name) for t in query_tokens)
+
+        products = [p for p in products if availability(p) == "in_stock" or named(p)]
 
     products = sorted(products, key=lambda p: (availability(p) != "in_stock", effective_price(p)))
     result = {

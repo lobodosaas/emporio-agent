@@ -24,6 +24,14 @@ def test_browse_by_category_and_price_lists_only_available():
         assert p.get("price", p.get("promo_price")) <= 1000
 
 
+def test_generic_query_lists_only_available_items():
+    # the model tends to send query="violão" together with the category
+    with_query = search_products(query="violão", category="Violões", max_price=1000)
+    without = search_products(category="Violões", max_price=1000)
+    assert with_query["count"] == without["count"] == 12
+    assert all(p["availability"] == "disponível" for p in with_query["products"])
+
+
 def test_truncated_results_report_exact_remaining_count():
     result = search_products(category="Violões", max_price=1000)
     assert result["count"] == 12
