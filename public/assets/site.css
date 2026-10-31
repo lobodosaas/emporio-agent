@@ -142,17 +142,21 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   table.stack tbody tr:nth-child(even) { background: var(--zebra); }
   table.stack td { border: 0; padding: 4px 0; text-align: left; }
   table.stack td[data-label]::before { content: attr(data-label); display: block; font-size: 0.75rem; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
-  table.stack td.num .tag-promo { margin-left: 0; }
   table.stack td:last-child { padding-top: 10px; }
 }
 
 .product-name { font-weight: 700; color: var(--navy); }
 .product-specs { font-size: 0.85rem; color: var(--ink-soft); margin-top: 2px; }
-.price-old { text-decoration: line-through; color: var(--ink-soft); font-size: 0.9rem; display: block; }
-.price { font-weight: 700; color: var(--ink); font-size: 1.05rem; }
-.price-note { display: block; font-size: 0.82rem; color: var(--ink-soft); }
-.tag-promo { display: table; margin-left: auto; font-size: 0.78rem; font-weight: 700; color: #8a5200; border: 1px solid var(--orange); border-radius: 3px; padding: 1px 6px; margin-top: 4px; }
-.stock-low { color: var(--warn); font-weight: 600; }
+.promo-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #8a5200; margin-bottom: 2px; }
+.price { display: block; font-weight: 700; color: var(--ink); font-size: 1.1rem; }
+.price-note { display: block; font-size: 0.82rem; color: var(--ink-soft); margin-top: 2px; }
+.price-note s { color: var(--ink-soft); }
+.pct { display: inline-block; font-weight: 700; color: #3b2300; background: var(--orange); border-radius: 3px; padding: 0 5px; margin-left: 4px; }
+.stock { display: inline-flex; align-items: center; gap: 8px; }
+.stock::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.stock.low { color: var(--warn); font-weight: 600; }
+.stock.low::before { background: var(--warn); }
+td[data-label="Categoria"] { color: var(--ink-soft); }
 .source-note { font-size: 0.82rem; color: var(--ink-soft); margin-top: 12px; }
 
 .cat-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 24px; border-top: 2px solid var(--navy); }

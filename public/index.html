@@ -6,7 +6,7 @@
 <title>Empório da Música · Instrumentos musicais em Campo Grande</title>
 <meta name="description" content="Loja de instrumentos musicais em Campo Grande/MS desde 2008. Violões, guitarras, baixos, baterias, teclados e ukuleles. Tire dúvidas com a Lia, nossa assistente virtual.">
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="/assets/site.css?v=3">
+<link rel="stylesheet" href="/assets/site.css?v=4">
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head>
 <body>
@@ -151,8 +151,8 @@
   </div>
 </footer>
 
-<script src="/assets/site.js?v=3"></script>
-<script type="module" src="/assets/hero.js?v=3"></script>
+<script src="/assets/site.js?v=4"></script>
+<script type="module" src="/assets/hero.js?v=4"></script>
 <script>
   // Featured products and categories, from the store data (/api/home).
   (async () => {
@@ -173,13 +173,18 @@
         strings,
         s.color ? (COLOR[s.color] || s.color) : null,
       ].filter(Boolean).join(" · ");
-      const price = p.promo_price != null
-        ? `<span class="price-old">${brl(p.original_price)}</span><span class="price">${brl(p.promo_price)}</span><span class="tag-promo">${esc(p.promotion)} −${p.discount_percent}%</span>`
+      // Every price cell has the same two lines: the price to pay, then its context.
+      const promo = p.promo_price != null;
+      const price = promo
+        ? `<span class="price">${brl(p.promo_price)}</span><span class="price-note">de <s>${brl(p.original_price)}</s> <span class="pct">−${p.discount_percent}%</span></span>`
         : `<span class="price">${brl(p.price)}</span><span class="price-note">${brl(p.pix_price)} no PIX</span>`;
-      const stock = p.low_stock ? `<span class="stock-low">${esc(p.low_stock[0].toUpperCase() + p.low_stock.slice(1))}</span>` : "Disponível";
+      const stock = p.low_stock
+        ? `<span class="stock low">${esc(p.low_stock[0].toUpperCase() + p.low_stock.slice(1))}</span>`
+        : `<span class="stock">Disponível</span>`;
       const ask = esc(`Quero saber mais sobre o ${p.name}`);
+      const promoLabel = promo ? `<div class="promo-label">${esc(p.promotion)}</div>` : "";
       return `<tr>
-        <td><div class="product-name">${esc(p.name)}</div><div class="product-specs">${esc(specs)}</div></td>
+        <td>${promoLabel}<div class="product-name">${esc(p.name)}</div><div class="product-specs">${esc(specs)}</div></td>
         <td data-label="Categoria">${esc(p.category)}</td>
         <td class="num" data-label="Preço">${price}</td>
         <td data-label="Estoque">${stock}</td>
