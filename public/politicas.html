@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Políticas da loja · Empório da Música</title>
+<meta name="description" content="Pagamento, trocas e devoluções, reembolso, frete, promoções, garantia e privacidade da Empório da Música.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/assets/site.css?v=2">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/"><strong>EMPÓRIO DA MÚSICA</strong><em><span class="wide">Instrumentos musicais · </span>Campo&nbsp;Grande/MS</em></a>
+    <nav class="site-nav" aria-label="Principal">
+      <a href="/#destaques">Destaques</a>
+      <a href="/#categorias">Categorias</a>
+      <a href="/#loja">A loja</a>
+      <a href="/politicas" aria-current="page">Políticas</a>
+    </nav>
+    <span class="status" data-store-status></span>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <aside class="doc-nav" aria-label="Seções do manual">
+    <ol data-doc-nav></ol>
+  </aside>
+  <article class="doc-body">
+    <h1>Políticas e procedimentos</h1>
+    <p class="meta">Manual de Políticas e Procedimentos de Atendimento ao Cliente · Versão 2.1, junho de 2025. Texto integral do manual da loja.</p>
+    <div data-doc></div>
+  </article>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <strong>EMPÓRIO DA MÚSICA</strong>
+        <em>Sua música começa aqui.</em>
+        <p style="margin-top:14px">Empório da Música Instrumentos Musicais Ltda.<br>CNPJ 12.345.678/0001-90</p>
+      </div>
+      <nav aria-label="Políticas">
+        <p class="footer-title">Políticas</p>
+        <ul>
+          <li><a href="/politicas#pagamento">Formas de pagamento</a></li>
+          <li><a href="/politicas#trocas-e-devolucoes">Trocas, devoluções e reembolso</a></li>
+          <li><a href="/politicas#frete-e-entregas">Frete e entregas</a></li>
+          <li><a href="/politicas#garantia">Garantia</a></li>
+          <li><a href="/politicas#promocoes">Promoções</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Privacidade e termos">
+        <p class="footer-title">Privacidade</p>
+        <ul>
+          <li><a href="/privacidade">Privacidade e LGPD</a></li>
+          <li><a href="/privacidade#cookies">Cookies e armazenamento</a></li>
+          <li><a href="/termos">Termos de uso</a></li>
+          <li><button class="linklike" data-open-consent>Preferências de privacidade</button></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-legal">
+      <span>© Empório da Música · Rua 14 de Maio, 3200 · Campo Grande – MS</span>
+      <span>Loja fictícia: projeto demonstrativo de case técnico. Dados de exemplo.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/site.js?v=2"></script>
+<script src="/assets/docs.js?v=2"></script>
+<script>
+  (async () => {
+    const sections = await EmporioDocs.renderPolicies(document.querySelector("[data-doc]"));
+    const nav = document.querySelector("[data-doc-nav]");
+    nav.innerHTML = sections.map((s) => `<li><a href="#${s.slug}">${EmporioDocs.esc(s.title)}</a></li>`).join("");
+    EmporioDocs.syncNav(nav);
+    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  })();
+</script>
+</body>
+</html>
