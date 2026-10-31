@@ -30,3 +30,6 @@ pylock.toml
 PRODUCT.md
 DESIGN.md
 .playwright-mcp/
+
+# local mode (python -m local.server): sqlite memory
+.local/

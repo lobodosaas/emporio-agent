@@ -13,7 +13,12 @@ dev = [
     "pytest",
     "pypdf",
 ]
+# Only for running locally without Cloudflare with a Claude key (scripts/local_server.py).
+# Kept out of [project.dependencies] so it is never bundled into the Worker.
+local = [
+    "anthropic>=1",
+]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
