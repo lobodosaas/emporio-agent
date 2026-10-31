@@ -9,7 +9,7 @@
   "ai": { "binding": "AI", "remote": true },
   "vars": {
     "MODEL": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
-    "MAX_OUTPUT_TOKENS": 600,
+    "MAX_OUTPUT_TOKENS": 900,
     "DAILY_LIMIT_PER_SESSION": 40,
     "DAILY_LIMIT_GLOBAL": 1500,
     "SHOW_TRACE": "true"
