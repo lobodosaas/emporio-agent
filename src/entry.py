@@ -31,6 +31,12 @@ LIMIT_REPLY = (
 BUSY_REPLY = "Estamos com muitas mensagens agora. Tente de novo em instantes, por favor."
 
 
+def escape_chat(value):
+    """Neutralize Slack/Discord markup in customer-provided text (<!channel>, @everyone, links)."""
+    text = str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return text.replace("@", "@​")
+
+
 def error(message, status):
     return Response.json({"error": message}, status=status)
 
@@ -168,10 +174,12 @@ class Default(WorkerEntrypoint):
         if not url:
             return
         label = "Novo lead" if item["type"] == "lead" else "Cliente pedindo atendimento humano"
-        text = f"{label}: " + ", ".join(f"{k}={v}" for k, v in item.items() if k != "type")
+        text = f"{label}: " + ", ".join(f"{k}={escape_chat(v)}" for k, v in item.items() if k != "type")
+        # "text" is read by Slack, "content" by Discord; mentions are disabled on both.
+        payload = {"text": text, "content": text, "link_names": False, "allowed_mentions": {"parse": []}}
         try:
             await fetch(str(url), method="POST", headers={"content-type": "application/json"},
-                        body=json.dumps({"text": text, "content": text}))
+                        body=json.dumps(payload))
         except Exception as exc:  # a failed notification must not break the chat
             print(f"webhook failed: {exc}")
 
