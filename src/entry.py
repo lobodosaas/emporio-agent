@@ -3,8 +3,11 @@
 Routes:
   POST /api/chat   {"session_id", "message"} -> {"reply"}
   POST /api/reset  {"session_id"}            -> clears that customer's history
+  POST /api/history {"session_id"}           -> that session's messages (restores the widget)
   GET  /api/inbox  (Bearer ADMIN_TOKEN)      -> leads and handoffs for the team
-  anything else    -> static chat UI from public/
+  GET  /api/home                             -> featured products, categories, open now
+  GET  /api/policies                         -> store manual as structured blocks
+  anything else    -> static website from public/
 
 Each customer session is one Durable Object (Conversation) holding its own
 history and daily quota. A single "__global__" instance keeps the global
@@ -18,6 +21,7 @@ from urllib.parse import urlparse
 
 from workers import DurableObject, Response, WorkerEntrypoint, fetch
 
+import site_data
 from agent import run_turn
 from prompt import store_now
 
@@ -93,6 +97,9 @@ class Conversation(DurableObject):
         await self._save("history", history)
         return json.dumps({"reply": reply, "events": events, "trace": trace}, ensure_ascii=False)
 
+    async def get_history(self):
+        return json.dumps(await self._load("history", []), ensure_ascii=False)
+
     async def reset(self):
         # The daily quota survives a reset, so resetting is not a way around it.
         await self.ctx.storage.delete("history")
@@ -127,6 +134,16 @@ class Default(WorkerEntrypoint):
             return Response.json({"ok": True})
         if path == "/api/inbox" and request.method == "GET":
             return await self.inbox(request)
+        if path == "/api/history" and request.method == "POST":
+            body = await self._body(request)
+            if not body or not SESSION_RE.match(str(body.get("session_id", ""))):
+                return error("invalid session_id", 400)
+            history = await self._stub(body["session_id"]).get_history()
+            return Response(history, headers={"content-type": "application/json; charset=utf-8"})
+        if path == "/api/home" and request.method == "GET":
+            return Response.json(site_data.home())
+        if path == "/api/policies" and request.method == "GET":
+            return Response.json(site_data.policies())
         if path.startswith("/api/"):
             return error("not found", 404)
         return await self.env.ASSETS.fetch(request)
