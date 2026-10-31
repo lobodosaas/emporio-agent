@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Token for GET /api/inbox (leads and handoffs). In production: npx wrangler secret put ADMIN_TOKEN
+ADMIN_TOKEN=change-me
+# Optional: Slack/Discord incoming webhook to notify the team. In production: npx wrangler secret put TEAM_WEBHOOK_URL
+# TEAM_WEBHOOK_URL=
