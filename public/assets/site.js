@@ -26,39 +26,83 @@
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>',
   };
 
-  // ---------- consent banner ----------
-  function showConsent() {
+  // ---------- consent: banner + preferences by category ----------
+  // Only one optional category exists ("memória da conversa"), stored as
+  // "granted" | "denied". Analytics and marketing are listed as not used.
+  function applyConsent(choice) {
+    store.set(CONSENT_KEY, choice);  // recording the choice is strictly necessary storage
+    if (choice === "granted") store.set(SESSION_KEY, sessionId);
+    else store.remove(SESSION_KEY);
+    const banner = document.getElementById("consent");
+    if (banner) banner.hidden = true;
+    document.getElementById("consent-prefs")?.close();
+  }
+
+  function showBanner() {
     let banner = document.getElementById("consent");
     if (!banner) {
       banner = document.createElement("section");
       banner.id = "consent";
       banner.className = "consent";
-      banner.setAttribute("aria-label", "Privacidade e armazenamento");
+      banner.setAttribute("aria-label", "Privacidade e cookies");
       banner.innerHTML = `
-        <h2>Sua privacidade</h2>
-        <p>Não usamos cookies de publicidade nem de rastreamento. Com sua permissão, guardamos no seu navegador
-        apenas um identificador da conversa com a Lia, para ela lembrar o papo quando você voltar.
-        <a href="/privacidade#cookies">Saiba mais</a>.</p>
+        <h2>Você controla o que fica guardado</h2>
+        <p>Este site não usa cookies de analytics nem de marketing. O que é necessário para o site funcionar fica sempre ativo.
+        O opcional é a memória da conversa com a Lia. <a href="/cookies">Política de Cookies</a>.</p>
         <div class="consent-actions">
+          <button class="btn btn-ghost btn-small" data-consent="denied">Rejeitar</button>
+          <button class="btn btn-ghost btn-small" data-consent-config>Configurar</button>
           <button class="btn btn-primary btn-small" data-consent="granted">Aceitar</button>
-          <button class="btn btn-ghost btn-small" data-consent="denied">Recusar</button>
         </div>`;
-      banner.addEventListener("click", (e) => {
-        const choice = e.target.closest("[data-consent]")?.dataset.consent;
-        if (!choice) return;
-        store.set(CONSENT_KEY, choice);  // the choice itself is strictly necessary storage
-        if (choice === "granted") store.set(SESSION_KEY, sessionId);
-        else store.remove(SESSION_KEY);
-        banner.hidden = true;
-      });
       document.body.appendChild(banner);
     }
     banner.hidden = false;
   }
-  window.EmporioConsent = { open: showConsent };
+
+  function showPreferences() {
+    let dialog = document.getElementById("consent-prefs");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "consent-prefs";
+      dialog.className = "prefs";
+      dialog.setAttribute("aria-labelledby", "prefs-title");
+      dialog.innerHTML = `
+        <form method="dialog">
+          <header class="prefs-head">
+            <h2 id="prefs-title">Preferências de cookies</h2>
+            <button class="icon-btn dark" value="cancel" aria-label="Fechar">${icon.close}</button>
+          </header>
+          <p class="prefs-intro">Escolha as finalidades que fazem sentido para você. Os necessários ficam sempre ativos porque mantêm o básico do site.</p>
+          <ul class="prefs-list">
+            <li><div><h3>Necessários</h3><p>Exibição do site, segurança e o registro da sua escolha nesta tela.</p></div><span class="prefs-state">Sempre ativo</span></li>
+            <li><div><h3>Memória da conversa</h3><p>Guarda um identificador aleatório para a Lia lembrar o papo quando você voltar ao site.</p></div>
+              <label class="switch"><input type="checkbox" name="memory"><span class="visually-hidden">Ativar memória da conversa</span><span aria-hidden="true"></span></label></li>
+            <li class="off"><div><h3>Analytics</h3><p>Medição de visitas e tráfego. Não usamos.</p></div><span class="prefs-state">Não usamos</span></li>
+            <li class="off"><div><h3>Marketing</h3><p>Pixels, remarketing e tags de campanha. Não usamos.</p></div><span class="prefs-state">Não usamos</span></li>
+          </ul>
+          <div class="consent-actions">
+            <button class="btn btn-ghost btn-small" type="button" data-consent="denied">Rejeitar</button>
+            <button class="btn btn-ghost btn-small" type="button" data-consent-save>Salvar preferências</button>
+            <button class="btn btn-primary btn-small" type="button" data-consent="granted">Aceitar tudo</button>
+          </div>
+        </form>`;
+      document.body.appendChild(dialog);
+    }
+    dialog.querySelector('input[name="memory"]').checked = consent() === "granted";
+    dialog.showModal();
+  }
+
   document.addEventListener("click", (e) => {
-    if (e.target.closest("[data-open-consent]")) { e.preventDefault(); showConsent(); }
+    const choice = e.target.closest("[data-consent]")?.dataset.consent;
+    if (choice) { applyConsent(choice); return; }
+    if (e.target.closest("[data-consent-config]")) { showPreferences(); return; }
+    if (e.target.closest("[data-consent-save]")) {
+      applyConsent(document.querySelector('#consent-prefs input[name="memory"]').checked ? "granted" : "denied");
+      return;
+    }
+    if (e.target.closest("[data-open-consent]")) { e.preventDefault(); showPreferences(); }
   });
+  window.EmporioConsent = { open: showPreferences };
 
   // ---------- store status in the header ----------
   async function loadStatus() {
@@ -230,5 +274,5 @@
   });
   window.Lia = { open };
 
-  if (!consent()) showConsent();
+  if (!consent()) showBanner();
 })();
