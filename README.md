@@ -7,8 +7,8 @@ A text customer service agent for **Empório da Música**, a fictional musical i
 The site follows the visual language of the store's own policy manual: navy headings, an orange rule and navy-header tables. It has:
 - a Three.js acoustic guitar in the hero; click it to hear an E major chord;
 - featured products and categories, from live data (`GET /api/home`); clicking a product or category asks Lia about it;
-- the full policy manual as web pages (`/politicas`, from `GET /api/policies`), plus Privacy/LGPD (`/privacidade`) and Terms of use (`/termos`);
-- an LGPD consent banner. The site sets no tracking or ad cookies. With consent, the browser keeps one random conversation id in `localStorage`, so Lia remembers the chat after a reload. Without consent the id lives only in memory, and the chat still works.
+- the full policy manual as web pages (`/politicas`, from `GET /api/policies`), plus a Privacy Policy (`/privacidade`), a Cookie Policy (`/cookies`) and Terms of use (`/termos`);
+- an LGPD consent banner (Reject / Configure / Accept, with per-category preferences). The site sets no cookies at all: production responses carry no `Set-Cookie`. With consent, the browser keeps one random conversation id in `localStorage`, so Lia remembers the chat after a reload. Without consent the id lives only in memory, and the chat still works.
 
 The agent talks to customers in **Brazilian Portuguese** (the store's language). Code, docs and this README are in English.
 
