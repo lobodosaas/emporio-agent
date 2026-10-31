@@ -1,0 +1,23 @@
+# secrets
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+python_modules/
+
+# cloudflare / node
+.wrangler/
+node_modules/
+
+# case brief from Artefact: kept local, not published
+case/desafio_tecnico_ai_eng_artefact.pdf
+
+# local backups
+.claude/settings.json.bak
