@@ -32,24 +32,69 @@ See [`examples/`](examples) for 5 real transcripts, including two non-trivial on
 
 ## Architecture
 
-```
-Browser (public/index.html) ─┐
-CLI (scripts/chat.py) ────────┼─► Worker  src/entry.py
-                              │     ├─ input validation (≤ 500 chars, session id format)
-                              │     ├─ rate limit per session and per IP      (Rate Limiting binding)
-                              │     ├─ global daily cap                        (Durable Object "__global__")
-                              │     └─ Durable Object per session: Conversation
-                              │           ├─ history (last 20 messages) + daily quota
-                              │           └─ agent loop  src/agent.py
-                              │                 ├─ system prompt  src/prompt.py (persona, rules, live date/open-closed)
-                              │                 ├─ LLM: Workers AI  @cf/deepseek-ai/deepseek-v4.1-flash-1017
-                              │                 └─ tools  src/tools.py  over  src/kb_data.py
-                              └─ leads/handoffs → team inbox (GET /api/inbox, bearer token) + optional webhook
+```mermaid
+flowchart LR
+    subgraph Client
+        W[Website + chat widget<br/>public/]
+        C[CLI<br/>scripts/chat.py]
+    end
 
-scripts/build_kb.py:  case/data/*.csv + políticas_da_loja.pdf  ──►  src/kb_data.py (generated)
+    subgraph CF[Cloudflare edge: no servers to run]
+        E[Python Worker<br/>src/entry.py<br/>validation + rate limits]
+        G[(Durable Object __global__<br/>daily cap + team inbox)]
+        S[(Durable Object per customer<br/>last 20 messages + daily quota)]
+        A[Agent loop<br/>src/agent.py]
+        AI[Workers AI<br/>DeepSeek V4.1 Flash]
+        T[Tools<br/>src/tools.py]
+        K[[Knowledge base in memory<br/>src/kb_data.py]]
+    end
+
+    B[scripts/build_kb.py<br/>runs once, offline] -->|CSV + policy PDF| K
+    W -->|POST /api/chat| E
+    C --> E
+    E --> G
+    E --> S
+    S --> A
+    A <-->|messages + tool schemas| AI
+    A -->|tool call| T
+    T --> K
+    G -.->|leads / handoffs| H[Team: GET /api/inbox<br/>or Slack/Discord webhook]
 ```
 
-- `src/tools.py`, `src/agent.py`, `src/prompt.py` and `src/site_data.py` are plain Python with no Cloudflare imports. They are unit-tested with a fake LLM.
+### What happens when a customer asks "Quanto custa o Takamine GD20?"
+
+```mermaid
+sequenceDiagram
+    participant U as Customer
+    participant W as Worker
+    participant DO as Customer's Durable Object
+    participant M as LLM
+    participant T as search_products
+
+    U->>W: POST /api/chat {session_id, message}
+    W->>W: validate, rate limit, global cap
+    W->>DO: chat(message)
+    DO->>DO: load last 20 messages, check daily quota
+    DO->>M: system prompt + history + message + 5 tool schemas
+    M-->>DO: call search_products {"query": "Takamine GD20"}
+    DO->>T: run the function in Python
+    T-->>DO: price R$ 2.199,00, PIX R$ 2.089,05, in stock
+    DO->>M: tool result
+    M-->>DO: answer in Portuguese
+    DO->>DO: save history
+    DO-->>U: reply + which tools were used
+```
+
+The model never knows a price by itself. It only decides which tool to call; the numbers always come from Python code over the store data.
+
+### Where each piece of information lives
+
+| Data | Where | Changes when |
+|---|---|---|
+| Catalog, orders, customers, promotions, policy manual | `src/kb_data.py`, built once by `scripts/build_kb.py` from `case/data/`, loaded in memory when the Worker starts | You rebuild and redeploy |
+| Conversation history (last 20 messages) and daily quota | One Durable Object per `session_id` (SQLite storage at the edge) | Every message |
+| Global daily cap, leads and handoffs | Durable Object `__global__` | Every message / event |
+| Consent choice and conversation id | The visitor's browser (`localStorage`), only with consent for the id | When the visitor decides |
 
 ### How memory works
 
@@ -59,50 +104,72 @@ scripts/build_kb.py:  case/data/*.csv + políticas_da_loja.pdf  ──►  src/k
 - With storage consent, the id survives reloads, and the widget restores the conversation through `POST /api/history`.
 - "Nova conversa" deletes the history on the server and starts a new id. The daily quota is kept, so resetting is no way around the limits.
 - Identity is per session, not per person: there is no login. Order data is only shown after the order number + e-mail/phone check. A WhatsApp channel would use the phone number as the key, which gives memory across devices.
-- `src/entry.py` is the only file that touches Workers APIs (bindings, Durable Objects, fetch).
+
+### Code layout and portability
+
+- `src/agent.py`, `src/tools.py`, `src/prompt.py` and `src/site_data.py` are plain Python with no Cloudflare imports. They are unit-tested with a fake LLM.
+- The LLM is injected as an async function, so the same agent runs on Workers AI (`src/entry.py`) or on any provider with your own key (`local/llm.py`).
+- `src/entry.py` is the only file that touches Workers APIs (bindings, Durable Objects, fetch). `local/server.py` is its stand-in for running on a laptop: same routes, same website, SQLite instead of Durable Objects.
 
 ## Running it
 
-You can **use the live demo** (no setup), or **run it on your machine**.
+Three ways, from zero setup to full control.
 
-### Prerequisites (local)
+| | What you need | Command |
+|---|---|---|
+| **A. Live demo** | A browser | Open https://emporio-agent.gulemes19.workers.dev |
+| **B. Locally with your own API key** (no Cloudflare) | [uv](https://docs.astral.sh/uv/) + one key: Claude, OpenAI, OpenRouter, Groq or DeepSeek | `uv run --group local python -m local.server` |
+| **C. Locally on the Cloudflare runtime** (same stack as production) | uv, Node.js 18+, a free Cloudflare account | `uv run pywrangler dev` |
 
-- [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) 18+
-- A free Cloudflare account. The model runs on Workers AI, so even local development calls Cloudflare:
-  ```bash
-  npx wrangler login
-  ```
-  No LLM API key is needed. Workers AI authenticates through the Cloudflare account binding.
-
-### Run locally
+### B. With your own API key
 
 ```bash
-uv sync                                 # dev tools: pywrangler, pytest, pypdf
-cp .dev.vars.example .dev.vars          # optional: set ADMIN_TOKEN for the inbox
-uv run pywrangler dev                   # http://localhost:8787  (web chat)
+cp .env.example .env        # uncomment ONE line and paste your key
+uv run --group local python -m local.server
+# open http://localhost:8787
 ```
 
-In another terminal, the CLI client (standard library only):
+| Provider | Variable in `.env` | Default model (override with `LLM_MODEL`) |
+|---|---|---|
+| Claude (Anthropic) | `ANTHROPIC_API_KEY` | `claude-opus-5-5`, through the official Anthropic SDK, with server-side refusal fallback enabled |
+| OpenAI | `OPENAI_API_KEY` | `gpt-6-luna` |
+| OpenRouter | `OPENROUTER_API_KEY` | `openai/gpt-6-luna` |
+| Groq | `GROQ_API_KEY` | `openai/gpt-oss-20b` |
+| DeepSeek | `DEEPSEEK_API_KEY` | `deepseek-flash` |
+
+The first key found is used; `LLM_PROVIDER` picks one explicitly, and `LLM_BASE_URL` points the OpenAI-compatible adapter at any other endpoint. Memory goes to `.local/emporio.db` (SQLite). Leads and handoffs print in the terminal and are listed at `http://localhost:8787/api/inbox`.
+
+### C. On the Cloudflare runtime
 
 ```bash
-uv run python scripts/chat.py                                  # interactive, local
+npx wrangler login                      # free account; Workers AI needs no API key
+uv sync
+cp .dev.vars.example .dev.vars          # optional: set ADMIN_TOKEN for the inbox
+uv run pywrangler dev                   # http://localhost:8787
+```
+
+Team inbox: `curl -H "Authorization: Bearer <ADMIN_TOKEN>" http://localhost:8787/api/inbox`.
+
+### Terminal client (works with A, B and C)
+
+```bash
+uv run python scripts/chat.py                                   # local server on :8787
 uv run python scripts/chat.py https://emporio-agent.gulemes19.workers.dev
 uv run python scripts/chat.py -m "Quanto custa o Takamine GD20?" -m "e no pix?"   # scripted transcript
-```
-
-Team inbox (leads and handoffs):
-
-```bash
-curl -H "Authorization: Bearer <ADMIN_TOKEN>" http://localhost:8787/api/inbox
 ```
 
 ### Tests
 
 ```bash
-uv run pytest
+uv run --group local pytest
 ```
 
-22 tests cover catalog search, promotion and PIX rules, order identity checks (including brute-force-style inputs), every policy topic, the agent loop (tool round trip, malformed arguments, step limit, LLM failure, history cap) and store hours.
+35 tests cover:
+- catalog search, promotion and PIX rules, and order identity checks (including brute-force-style inputs);
+- every policy topic, and the PDF → web page parser (with a check that every word of the manual is published);
+- the agent loop: tool round trip, malformed arguments, step limit, LLM failure, history cap;
+- the provider adapters (Claude message conversion, refusal handling, OpenAI-compatible requests) and the local HTTP server;
+- store hours.
 
 ### Rebuild the knowledge base
 
@@ -140,6 +207,7 @@ I did not use a SQL agent: there are 6 small tables and only a handful of query 
 - **No API key to manage or leak.** The `AI` binding authenticates through the Cloudflare account. The public repo holds no secret, and a reviewer can run it with a free Cloudflare login.
 - I checked the tool-calling format of several Workers AI models in a spike: `llama-3.3-70b-instruct-fp8-fast`, `gpt-oss-120b`, `glm-5.3-flash` and `deepseek-v4.1-flash-1017`. All returned OpenAI-style `tool_calls`. I chose DeepSeek V4.1 Flash and validated it end to end on the example scenarios. It handled Portuguese well, chained multiple tools (order + policy, product + payment policy) and kept its answers grounded.
 - The model is one config value (`MODEL`), so it can be swapped without code changes.
+- Outside Cloudflare, the same agent runs with Claude (official Anthropic SDK), OpenAI, OpenRouter, Groq or DeepSeek (option B in [Running it](#running-it)). The OpenAI-compatible path was verified end to end against a real OpenAI-format API (catalog lookup, follow-up memory, verified order lookup). Claude was covered with unit tests only, because no Anthropic key was available while I built this.
 
 ### Runtime: Cloudflare Python Workers + Durable Objects
 
@@ -147,6 +215,24 @@ I did not use a SQL agent: there are 6 small tables and only a handful of query 
 - **One Durable Object per customer session** gives simple, strongly consistent memory (last 20 messages) and a per-customer daily quota, with no external database.
 - The same Durable Object class, under the fixed name `__global__`, holds the global daily cap and the team inbox.
 - The runtime has **zero third-party Python dependencies**. This avoids the beta's package limitations, keeps cold start small (~0.4 s startup reported by deploy) and means the core logic runs anywhere Python runs.
+
+### Why this architecture
+
+I use this stack (Cloudflare Workers + Durable Objects, with a provider-agnostic agent core) across several projects, for these reasons:
+
+- **Scale without thinking about infrastructure.** No servers, containers, load balancers or database to provision. Each customer conversation is its own Durable Object, so load spreads across Cloudflare's network on its own, and the free tier covers a demo like this.
+- **Easy to change.** The core (agent loop, tools, prompt) is plain Python with the LLM injected. Swapping the model is one config value; swapping the provider is one adapter (`src/entry.py` for Workers AI, `local/llm.py` for Claude/OpenAI/OpenRouter/Groq/DeepSeek). Adding a capability is one function plus its JSON schema in `src/tools.py`.
+- **Easy to integrate.** Everything is plain HTTP + JSON:
+  - leads and handoffs come out through `GET /api/inbox` and an optional webhook, ready to feed a CRM or helpdesk;
+  - the same `/api/chat` serves the website, the CLI or a WhatsApp gateway;
+  - the store data could move to D1 (Cloudflare's SQL database) or to an existing ERP API by replacing only the tool functions.
+- **Observable and cheap to run.** Tool calls are returned with every answer, Workers logs and traces are on, and the cost is capped in layers (see Security and cost controls).
+- **No lock-in for the logic.** Option B runs the whole product on a laptop with SQLite and any API key, proving the core does not depend on Cloudflare.
+
+Trade-offs, stated plainly:
+- Python Workers is still in open beta.
+- Durable Objects are Cloudflare-specific: the storage adapter would change on another cloud, though the agent would not.
+- Workers AI models trail the frontier models. That is why the agent also runs with Claude or GPT through option B.
 
 ### Prompt strategy
 
@@ -224,12 +310,14 @@ I used **Claude Code** (Anthropic's CLI agent, Claude Opus model) as a pair prog
 case/data/            raw data provided by the case (CSV + policy PDF)
 scripts/build_kb.py   data treatment → src/kb_data.py
 scripts/chat.py       terminal client (local or deployed)
+local/llm.py          LLM adapters for your own key: Claude (Anthropic SDK), OpenAI, OpenRouter, Groq, DeepSeek
+local/server.py       run everything locally without Cloudflare (same routes, SQLite memory)
 src/entry.py          Worker routes, Durable Object, limits, Workers AI adapter
 src/agent.py          agent loop (LLM-agnostic)
 src/tools.py          tools + JSON schemas
 src/prompt.py         system prompt, store hours
 src/kb_data.py        generated knowledge base
-public/               website: home (Three.js hero), policies, privacy, terms, chat widget, consent banner
+public/               website: home (Three.js hero), policies, privacy, cookies, terms, chat widget, consent banner
 src/site_data.py      website data: featured products, categories, manual → structured blocks
 tests/                pytest suite
 examples/             real conversation transcripts
