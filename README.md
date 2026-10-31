@@ -27,6 +27,32 @@ uv run --group local python -m local.server
 
 Open http://localhost:8787. The same website and agent run on your machine, with no Cloudflare account. Other ways to run it are in [Running it](#running-it).
 
+## For reviewers: where each deliverable is
+
+| Asked in the brief | Where |
+|---|---|
+| Python agent with the store's persona that knows when to query data vs. policies | [What it does](#what-it-does), `src/agent.py`, `src/tools.py`, `src/prompt.py` |
+| How to run it (environment, model provider, commands) | [Quick start](#quick-start-2-minutes) and [Running it](#running-it) |
+| Technical decisions (approach, LLM, retrieval, prompt, memory, data treatment) | [Technical decisions](#technical-decisions) |
+| Known limitations and what I'd do with more time | [Known limitations and next steps](#known-limitations-and-next-steps) |
+| Use of AI coding assistants and workflow | [Use of AI coding assistants](#use-of-ai-coding-assistants) |
+| 3–5 example conversations, at least one non-trivial | [`examples/`](examples) (5 transcripts; #04 and #05 are non-trivial) |
+| Assumptions made where the brief was ambiguous | [Assumptions](#assumptions) |
+| Architecture, explained visually | [`docs/architecture.md`](docs/architecture.md) |
+
+## Try the four scenarios from the brief
+
+Open the [live demo](https://emporio-agent.gulemes19.workers.dev) (or your local copy), click **Fale com a Lia** and send:
+
+| # | Message | What you should see | Proof |
+|---|---|---|---|
+| 1 | Quais opções de violões disponíveis custando até R$1000? | Catalog lookup: 12 guitars in stock, 8 listed with price and PIX price, "4 more" | [screenshot](docs/screenshots/1-violoes-ate-1000.png) |
+| 2 | Qual o endereço da loja? | Policy lookup: Rua 14 de Maio, 3200, Centro, Campo Grande/MS, plus phone, e-mail and whether the store is open now | [screenshot](docs/screenshots/2-endereco.png) |
+| 3 | Quanto custa o Takamine GD20? | R$ 2.199,00, or R$ 2.089,05 on PIX, in stock | [screenshot](docs/screenshots/3-takamine-gd20.png) |
+| 4 | Me arrependi da minha compra, posso devolver meu pedido? → then: É o pedido 8, meu email é anacarol.ferreira@coldmail.com | Explains the 7-day rule and asks for order + e-mail. Then finds the order still "in transit" months after the estimate, so the 7 days have not started, and hands the case to a human | [screenshot](docs/screenshots/4-arrependimento-devolucao.png) |
+
+Under each answer the chat shows which tools were used (catalog, order, policies, sales contact, human team). The full check against the store data is in [`docs/case-verification.md`](docs/case-verification.md). To run the automated suite: `uv run --group local pytest` (38 tests).
+
 ---
 
 ## What it does
@@ -40,8 +66,6 @@ Open http://localhost:8787. The same website and agent run on your machine, with
 | Complaints, return processing, "I want a person" | `handoff_to_human` → team inbox, tells the customer the 24 business-hour SLA |
 | Accessories (strings, cases, amps...) | Explains the store only sells instruments (manual §1, §7.1) |
 | Anything unrelated / prompt injection | Politely declines and steers back |
-
-A full check of the delivery against the case brief, with screenshots of the four suggested scenarios on the live site, is in [`docs/case-verification.md`](docs/case-verification.md).
 
 See [`examples/`](examples) for 5 real transcripts, including two non-trivial ones:
 - [04: return request](examples/04-return-policy-with-order.md): the agent verifies the order, compares the delivery date with the 7-day and 30-day rules and escalates to a human.
