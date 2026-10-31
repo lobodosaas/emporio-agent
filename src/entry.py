@@ -32,9 +32,14 @@ BUSY_REPLY = "Estamos com muitas mensagens agora. Tente de novo em instantes, po
 
 
 def escape_chat(value):
-    """Neutralize Slack/Discord markup in customer-provided text (<!channel>, @everyone, links)."""
+    """Neutralize Slack/Discord markup in customer-provided text.
+
+    Customer text is rendered as an inline code span (no Markdown links or
+    formatting), with mentions and URLs broken so nothing becomes clickable.
+    """
     text = str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    return text.replace("@", "@​")
+    text = text.replace("`", "'").replace("@", "@​").replace("://", ":/​/")
+    return f"`{text}`"
 
 
 def error(message, status):
@@ -175,8 +180,9 @@ class Default(WorkerEntrypoint):
             return
         label = "Novo lead" if item["type"] == "lead" else "Cliente pedindo atendimento humano"
         text = f"{label}: " + ", ".join(f"{k}={escape_chat(v)}" for k, v in item.items() if k != "type")
-        # "text" is read by Slack, "content" by Discord; mentions are disabled on both.
-        payload = {"text": text, "content": text, "link_names": False, "allowed_mentions": {"parse": []}}
+        # "text" is read by Slack, "content" by Discord; mentions and link previews are disabled.
+        payload = {"text": text, "content": text, "link_names": False, "unfurl_links": False,
+                   "allowed_mentions": {"parse": []}, "flags": 4}
         try:
             await fetch(str(url), method="POST", headers={"content-type": "application/json"},
                         body=json.dumps(payload))
