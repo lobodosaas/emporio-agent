@@ -338,18 +338,36 @@ Customer data protection (LGPD, manual §9):
 
 ## Use of AI coding assistants
 
-I used **Claude Code** (Anthropic's CLI agent, Claude Opus model) as a pair programmer throughout the project. My workflow:
+### Tools and models
 
-- **I set the direction**: Cloudflare Workers + Durable Objects, memory per customer, lead capture and human handoff, layered abuse limits to protect my LLM usage, and the model choice (I rejected an option I didn't like and picked DeepSeek V4.1 Flash on Workers AI). I also asked that the policy manual be used in full, with nothing dropped.
-- **Claude Code**:
-  - inspected the case files (and first checked the zip for anything malicious);
-  - surfaced the data inconsistencies listed above;
-  - ran a small spike to check the tool-calling format of four Workers AI models before committing to one;
-  - wrote the code and the tests;
-  - ran the scenarios against the real model.
-- **Iteration from real runs**: the scenario transcripts drove the prompt fixes, for example forbidding promises the tools can't keep (reservations) and grounding every claim in tool data after the model invented a manufacturer warranty period.
-- **Security review**: an automated review hook flagged issues on commits (a phone-suffix match that was too loose in the order check, chat-markup injection in the webhook). Each one was fixed, with a regression test where applicable.
-- I reviewed the changes and the transcripts, and the commit history shows the incremental progress.
+- **Claude Code**, Anthropic's agentic coding CLI, was the main tool for the whole project.
+- **Several models through Claude Code**, switched with `/model` as the work changed:
+  - **Claude Opus 5.5** for the heavier parts: architecture, the agent loop, security fixes, the website and the final verification;
+  - **Claude Haiku 5.5** for faster, lighter steps;
+  - **GLM** and **MiniMax** models, also run through Claude Code.
+- **Playwright (browser automation through Claude Code)** to drive the real website: it opened the chat, sent the four scenarios from the brief, took the screenshots in `docs/screenshots/` and checked layout on desktop and mobile.
+- **Automated security review** (a Claude Code hook) checked every commit and flagged real issues.
+
+### How the work went
+
+1. **Brief and data first.** Claude Code checked the zip for anything malicious, read the brief and the policy PDF, and inspected every CSV. It surfaced the data inconsistencies listed in [Assumptions](#assumptions) and [Data treatment](#data-treatment).
+2. **I set the direction**:
+   - the architecture: Cloudflare Workers + Durable Objects, memory per customer, lead capture and human handoff, layered abuse limits to protect my LLM usage;
+   - the model choice: I rejected an option I didn't like and picked DeepSeek V4.1 Flash on Workers AI;
+   - two scope rules: use the policy manual in full, with nothing dropped, and make the project easy for a reviewer to run with their own key.
+3. **A spike before committing.** A throwaway Worker compared the tool-calling format of four Workers AI models before one was chosen.
+4. **Build in small, tested steps.** Data pipeline → tools → agent loop → Worker → website → local mode. Each step got unit tests (38 now) and its own commit, so the history shows real progress.
+5. **Iterate from real runs, not from guesses.** Transcripts against the real model drove the fixes:
+   - forbidding promises the tools can't keep (reservations);
+   - grounding every claim in tool data, after the model invented a manufacturer warranty period;
+   - giving the model exact counts, after a wrong "6 more" was traced to the search tool.
+6. **Security review on every commit.** The automated review flagged real issues, each fixed with a regression test where applicable:
+   - a phone-suffix match that was too loose in the order check;
+   - chat-markup injection in the team webhook;
+   - cross-site requests against the local server.
+7. **Verify like a reviewer would.** The four scenarios from the brief were run on the live site and checked against the data (`docs/case-verification.md`). The project was cloned fresh from GitHub and run with only an API key.
+
+I reviewed the changes and the transcripts at each step and decided what went in. The AI did the heavy lifting on code, tests and checks.
 
 ## Repository layout
 
