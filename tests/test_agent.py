@@ -71,6 +71,15 @@ def test_malformed_arguments_do_not_crash():
     assert "error" in llm.calls[1][-1]["content"]
 
 
+def test_llm_failure_returns_fallback_instead_of_crashing():
+    async def broken_llm(messages, tools):
+        raise RuntimeError("AiError: 3021: rate limiting")
+
+    reply, history, _, _ = asyncio.run(run_turn(broken_llm, [], "oi", MONDAY_10AM))
+    assert reply == FALLBACK
+    assert history[-1] == {"role": "assistant", "content": FALLBACK}
+
+
 def test_history_is_capped():
     history = [{"role": "user", "content": str(i)} for i in range(HISTORY_LIMIT)]
     llm = scripted_llm({"content": "oi"})

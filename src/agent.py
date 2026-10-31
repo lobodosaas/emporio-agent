@@ -39,7 +39,12 @@ async def run_turn(llm, history, user_message, now=None):
     events, trace = [], []
 
     for _ in range(MAX_STEPS):
-        message = await llm(messages, SCHEMAS)
+        try:
+            message = await llm(messages, SCHEMAS)
+        except Exception as exc:  # provider down, rate limited, bad response: answer anyway
+            print(f"llm call failed: {exc}")
+            reply = FALLBACK
+            break
         tool_calls = message.get("tool_calls") or []
         if not tool_calls:
             reply = (message.get("content") or "").strip() or FALLBACK

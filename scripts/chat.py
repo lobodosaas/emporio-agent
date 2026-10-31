@@ -24,7 +24,11 @@ def post(base_url, path, payload):
         with urllib.request.urlopen(request, timeout=120) as response:
             return json.loads(response.read())
     except urllib.error.HTTPError as exc:
-        return json.loads(exc.read() or b"{}")
+        body = exc.read()
+        try:
+            return json.loads(body)
+        except ValueError:
+            return {"error": f"HTTP {exc.code}: {body[:200].decode(errors='replace')}"}
 
 
 def ask(base_url, session_id, message):
