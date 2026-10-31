@@ -78,6 +78,13 @@ def test_order_with_wrong_contact_looks_like_missing_order():
     assert "error" in wrong
 
 
+def test_phone_check_rejects_short_or_padded_suffixes():
+    # customer of order 8 has phone (67) 99654-7821
+    for attempt in ("00000001", "0000007821", "7821", "1", "+55 67 0000-7821"):
+        assert "error" in get_order_status(8, attempt), attempt
+    assert get_order_status(8, "+55 67 99654-7821")["order_id"] == 8
+
+
 def test_delivered_order_reports_days_since_delivery():
     order = get_order_status(4, "lucas.mendes@jmail.com", today=date(2026, 1, 1))
     assert order["delivered_on_or_before"] == "2025-12-22"

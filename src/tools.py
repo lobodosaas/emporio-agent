@@ -140,8 +140,11 @@ def _identity_matches(customer, email_or_phone):
     if "@" in given:
         return given == customer["email"]
     given_digits = re.sub(r"\D", "", given)
-    # accept with or without area code / country code
-    return len(given_digits) >= 8 and customer["phone_digits"].endswith(given_digits[-9:].lstrip("0") or "x")
+    # Accept with or without area/country code, but always compare the full
+    # 8-digit subscriber number, never a shorter suffix.
+    if len(given_digits) < 8:
+        return False
+    return given_digits[-8:] == customer["phone_digits"][-8:]
 
 
 def get_order_status(order_id, email_or_phone, today=None):
