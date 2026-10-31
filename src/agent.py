@@ -49,7 +49,10 @@ async def run_turn(llm, history, user_message, now=None):
         if not tool_calls:
             reply = (message.get("content") or "").strip() or FALLBACK
             break
-        messages.append({"role": "assistant", "content": message.get("content") or "", "tool_calls": tool_calls})
+        assistant = {"role": "assistant", "content": message.get("content") or "", "tool_calls": tool_calls}
+        if "_raw" in message:  # provider-native blocks (e.g. Claude thinking) to send back unchanged
+            assistant["_raw"] = message["_raw"]
+        messages.append(assistant)
         for call in tool_calls:
             name = call["function"]["name"]
             args = _parse_arguments(call["function"].get("arguments"))

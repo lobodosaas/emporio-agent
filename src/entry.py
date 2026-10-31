@@ -59,7 +59,7 @@ class WorkersAI:
 
     async def __call__(self, messages, tools):
         out = await self.env.AI.run(self.env.MODEL, {
-            "messages": messages,
+            "messages": [{k: v for k, v in m.items() if not k.startswith("_")} for m in messages],
             "tools": tools,
             "max_tokens": int(self.env.MAX_OUTPUT_TOKENS),
             "temperature": 0.2,
