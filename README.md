@@ -2,7 +2,13 @@
 
 A text customer service agent for **Empório da Música**, a fictional musical instrument store in Campo Grande/MS. Written in Python, it runs on **Cloudflare Python Workers**. Every customer gets their own short-term memory. The agent looks up live catalog and order data, applies the store policy manual, captures sales leads and hands a conversation to a human when needed.
 
-**Live demo:** https://emporio-agent.gulemes19.workers.dev (web chat). The tool calls the agent made are shown under each answer.
+**Live demo:** https://emporio-agent.gulemes19.workers.dev: the store website, with the agent in the floating "Fale com a Lia" button (bottom-right) on every page. The tool calls the agent made are shown under each answer.
+
+The site follows the visual language of the store's own policy manual: navy headings, an orange rule and navy-header tables. It has:
+- a Three.js acoustic guitar in the hero; click it to hear an E major chord;
+- featured products and categories, from live data (`GET /api/home`); clicking a product or category asks Lia about it;
+- the full policy manual as web pages (`/politicas`, from `GET /api/policies`), plus Privacy/LGPD (`/privacidade`) and Terms of use (`/termos`);
+- an LGPD consent banner. The site sets no tracking or ad cookies. With consent, the browser keeps one random conversation id in `localStorage`, so Lia remembers the chat after a reload. Without consent the id lives only in memory, and the chat still works.
 
 The agent talks to customers in **Brazilian Portuguese** (the store's language). Code, docs and this README are in English.
 
@@ -43,7 +49,16 @@ CLI (scripts/chat.py) ────────┼─► Worker  src/entry.py
 scripts/build_kb.py:  case/data/*.csv + políticas_da_loja.pdf  ──►  src/kb_data.py (generated)
 ```
 
-- `src/tools.py`, `src/agent.py` and `src/prompt.py` are plain Python with no Cloudflare imports. They are unit-tested with a fake LLM.
+- `src/tools.py`, `src/agent.py`, `src/prompt.py` and `src/site_data.py` are plain Python with no Cloudflare imports. They are unit-tested with a fake LLM.
+
+### How memory works
+
+- The browser creates a random `session_id`, sent with every message.
+- The Worker routes each `session_id` to its own Durable Object. That object stores the last 20 messages and the daily quota for this customer.
+- Every turn, the agent receives that history, so follow-ups like "e no pix?" resolve without repeating the product.
+- With storage consent, the id survives reloads, and the widget restores the conversation through `POST /api/history`.
+- "Nova conversa" deletes the history on the server and starts a new id. The daily quota is kept, so resetting is no way around the limits.
+- Identity is per session, not per person: there is no login. Order data is only shown after the order number + e-mail/phone check. A WhatsApp channel would use the phone number as the key, which gives memory across devices.
 - `src/entry.py` is the only file that touches Workers APIs (bindings, Durable Objects, fetch).
 
 ## Running it
@@ -183,6 +198,8 @@ Customer data protection (LGPD, manual §9):
 - **Handoff is a queue, not a live transfer.** It goes to an inbox and optional webhook. A real deployment would create a ticket in the helpdesk and pause the bot for that session until a human replies.
 - **Catalog search is keyword-based** (accent-insensitive, with filters). Typos like "takamini" are not matched. With more time: fuzzy matching or a small embedding index over product names only.
 - **Rate limits are approximate per location** (a property of the binding). The global cap is strict, and it is the real cost ceiling.
+- **No bot challenge.** I left out Cloudflare Turnstile on purpose for this demo; the layered limits cap the cost. Next step for production: an invisible Turnstile check before the first message of a session, validated in the Worker.
+- **Privacy and terms pages** cover the site and the assistant (storage, conversation data, LGPD rights). They were written for this demo and are not legal advice.
 - **Evaluation.** The examples were checked by hand. Next step: an automated eval set (question → expected tool calls + facts that must or must not appear), run against each prompt or model change.
 - **Python Workers is in open beta**; a stable fallback would be the same `agent.py`/`tools.py` behind FastAPI on any host.
 
@@ -212,7 +229,8 @@ src/agent.py          agent loop (LLM-agnostic)
 src/tools.py          tools + JSON schemas
 src/prompt.py         system prompt, store hours
 src/kb_data.py        generated knowledge base
-public/index.html     web chat
+public/               website: home (Three.js hero), policies, privacy, terms, chat widget, consent banner
+src/site_data.py      website data: featured products, categories, manual → structured blocks
 tests/                pytest suite
 examples/             real conversation transcripts
 ```
