@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empório da Música · Atendimento</title>
+<style>
+  :root { --bg:#f6f4ef; --card:#fff; --ink:#1d2a36; --muted:#6b7680; --brand:#1b4f72; --accent:#f0a030; --me:#1b4f72; --bot:#eef2f5; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width:720px; margin:0 auto; height:100dvh; display:flex; flex-direction:column; padding:0 16px; }
+  header { padding:20px 0 12px; border-bottom:2px solid var(--accent); display:flex; justify-content:space-between; align-items:end; gap:12px; }
+  h1 { margin:0; font-size:20px; color:var(--brand); }
+  header p { margin:2px 0 0; color:var(--muted); font-size:14px; }
+  #reset { background:none; border:1px solid #c9d1d8; border-radius:8px; padding:6px 10px; color:var(--muted); cursor:pointer; }
+  #log { flex:1; overflow-y:auto; padding:16px 0; display:flex; flex-direction:column; gap:10px; }
+  .msg { max-width:85%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; word-wrap:break-word; }
+  .user { align-self:flex-end; background:var(--me); color:#fff; border-bottom-right-radius:4px; }
+  .bot { align-self:flex-start; background:var(--bot); border-bottom-left-radius:4px; }
+  .trace { align-self:flex-start; font-size:12px; color:var(--muted); margin-top:-6px; }
+  .pending { opacity:.6; font-style:italic; }
+  form { display:flex; gap:8px; padding:12px 0 20px; }
+  input { flex:1; font:inherit; padding:12px 14px; border:1px solid #c9d1d8; border-radius:12px; background:var(--card); }
+  button[type=submit] { font:inherit; padding:0 18px; border:0; border-radius:12px; background:var(--brand); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Empório da Música</h1>
+      <p>Sua música começa aqui. Fale com a Lia, nossa assistente virtual.</p>
+    </div>
+    <button id="reset" title="Começar uma nova conversa">Nova conversa</button>
+  </header>
+  <div id="log" aria-live="polite"></div>
+  <form id="form">
+    <input id="text" maxlength="500" autocomplete="off" placeholder="Pergunte sobre instrumentos, pedidos, trocas..." required>
+    <button type="submit">Enviar</button>
+  </form>
+</main>
+<script>
+  const log = document.getElementById("log");
+  const form = document.getElementById("form");
+  const input = document.getElementById("text");
+
+  function newSessionId() { return "web-" + crypto.randomUUID(); }
+  let sessionId;
+  try { sessionId = localStorage.getItem("emporio_session") || newSessionId(); localStorage.setItem("emporio_session", sessionId); }
+  catch { sessionId = newSessionId(); }
+
+  function add(text, cls) {
+    const div = document.createElement("div");
+    div.className = "msg " + cls;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  function addTrace(trace) {
+    if (!trace || !trace.length) return;
+    const div = document.createElement("div");
+    div.className = "trace";
+    div.textContent = "consultou: " + trace.map(t => t.tool).join(", ");
+    log.appendChild(div);
+  }
+
+  add("Oi! Eu sou a Lia, da Empório da Música. Posso ajudar com instrumentos, preços, pedidos, trocas, frete e pagamento. 🎸", "bot");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    add(message, "user");
+    const pending = add("digitando...", "bot pending");
+    form.querySelector("button").disabled = true;
+    try {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, message }) });
+      const data = await res.json();
+      pending.remove();
+      add(data.reply || data.error || "Erro inesperado.", "bot");
+      addTrace(data.trace);
+    } catch {
+      pending.textContent = "Não consegui conectar. Tente de novo.";
+    } finally {
+      form.querySelector("button").disabled = false;
+      input.focus();
+    }
+  });
+
+  document.getElementById("reset").addEventListener("click", async () => {
+    await fetch("/api/reset", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
+    sessionId = newSessionId();
+    try { localStorage.setItem("emporio_session", sessionId); } catch {}
+    log.innerHTML = "";
+    add("Conversa reiniciada. Como posso ajudar?", "bot");
+  });
+</script>
+</body>
+</html>
