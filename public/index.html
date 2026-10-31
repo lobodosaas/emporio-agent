@@ -3,110 +3,195 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Empório da Música · Atendimento</title>
+<title>Empório da Música · Instrumentos musicais em Campo Grande</title>
+<meta name="description" content="Loja de instrumentos musicais em Campo Grande/MS desde 2008. Violões, guitarras, baixos, baterias, teclados e ukuleles. Tire dúvidas com a Lia, nossa assistente virtual.">
 <link rel="icon" href="data:,">
-<style>
-  /* palette taken from the store manual: white page, navy headings, orange rule */
-  :root { --bg:#ffffff;--card:#fff; --ink:#1d2a36; --muted:#6b7680; --brand:#1b4f72; --accent:#f0a030; --me:#1b4f72; --bot:#eef2f5; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
-  main { max-width:720px; margin:0 auto; height:100dvh; display:flex; flex-direction:column; padding:0 16px; }
-  header { padding:20px 0 12px; border-bottom:2px solid var(--accent); display:flex; justify-content:space-between; align-items:end; gap:12px; }
-  h1 { margin:0; font-size:20px; color:var(--brand); }
-  header p { margin:2px 0 0; color:var(--muted); font-size:14px; }
-  #reset { background:none; border:1px solid #c9d1d8; border-radius:8px; padding:6px 10px; color:var(--muted); cursor:pointer; }
-  #log { flex:1; overflow-y:auto; padding:16px 0; display:flex; flex-direction:column; gap:10px; }
-  .msg { max-width:85%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; word-wrap:break-word; }
-  .user { align-self:flex-end; background:var(--me); color:#fff; border-bottom-right-radius:4px; }
-  .bot { align-self:flex-start; background:var(--bot); border-bottom-left-radius:4px; }
-  .trace { align-self:flex-start; font-size:12px; color:var(--muted); margin-top:-6px; }
-  .pending { opacity:.6; font-style:italic; }
-  form { display:flex; gap:8px; padding:12px 0 20px; }
-  input { flex:1; font:inherit; padding:12px 14px; border:1px solid #c9d1d8; border-radius:12px; background:var(--card); }
-  button[type=submit] { font:inherit; padding:0 18px; border:0; border-radius:12px; background:var(--brand); color:#fff; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-</style>
+<link rel="stylesheet" href="/assets/site.css?v=2">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head>
 <body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/"><strong>EMPÓRIO DA MÚSICA</strong><em><span class="wide">Instrumentos musicais · </span>Campo&nbsp;Grande/MS</em></a>
+    <nav class="site-nav" aria-label="Principal">
+      <a href="#destaques">Destaques</a>
+      <a href="#categorias">Categorias</a>
+      <a href="#loja">A loja</a>
+      <a href="/politicas">Políticas</a>
+    </nav>
+    <span class="status" data-store-status></span>
+  </div>
+</header>
+
 <main>
-  <header>
-    <div>
-      <h1>Empório da Música</h1>
-      <p>Sua música começa aqui. Fale com a Lia, nossa assistente virtual.</p>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div>
+        <h1 id="hero-title">Sua música começa aqui.</h1>
+        <hr class="rule">
+        <p class="lead">Instrumentos musicais para iniciantes, intermediários e profissionais, desde 2008 em Campo Grande. Pergunte preço, estoque, frete ou o status do seu pedido para a Lia, nossa assistente virtual.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" data-ask="">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>
+            Falar com a Lia
+          </button>
+          <a class="btn btn-ghost" href="#destaques">Ver destaques</a>
+        </div>
+        <div class="hero-facts">
+          <span><b>PIX</b> com 5% de desconto</span>
+          <span><b>Até 12x</b> sem juros</span>
+          <span><b>Frete grátis</b> acima de R$ 500 na Grande Campo Grande</span>
+        </div>
+      </div>
+      <div class="stage" data-guitar>
+        <p class="stage-fallback" hidden>Seu navegador não exibe 3D, mas a Lia continua aqui para ajudar.</p>
+        <span class="stage-caption">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Clique no violão para ouvir um acorde
+        </span>
+      </div>
     </div>
-    <button id="reset" title="Começar uma nova conversa">Nova conversa</button>
-  </header>
-  <div id="log" aria-live="polite"></div>
-  <form id="form">
-    <input id="text" maxlength="500" autocomplete="off" placeholder="Pergunte sobre instrumentos, pedidos, trocas..." required>
-    <button type="submit">Enviar</button>
-  </form>
+  </section>
+
+  <section class="section" id="destaques" aria-labelledby="destaques-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="destaques-title">Destaques da semana</h2>
+        <hr class="rule">
+        <p>Promoções ativas e instrumentos com estoque hoje. Quer outra opção? A Lia busca no catálogo inteiro.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="stack">
+          <thead>
+            <tr><th scope="col">Instrumento</th><th scope="col">Categoria</th><th scope="col" class="num">Preço</th><th scope="col">Estoque</th><th scope="col"><span class="visually-hidden">Ação</span></th></tr>
+          </thead>
+          <tbody data-featured>
+            <tr><td colspan="5">Carregando destaques…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">Preços e estoque vêm direto do sistema da loja. Em promoção, o desconto de 5% no PIX não se aplica (política de promoções, seção 6.2).</p>
+    </div>
+  </section>
+
+  <section class="section" id="categorias" aria-labelledby="categorias-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="categorias-title">Categorias</h2>
+        <hr class="rule">
+        <p>Trabalhamos exclusivamente com instrumentos musicais. Toque em uma categoria e a Lia mostra o que está disponível.</p>
+      </div>
+      <ul class="cat-list" data-categories></ul>
+    </div>
+  </section>
+
+  <section class="section" id="loja" aria-labelledby="loja-title">
+    <div class="wrap two-col">
+      <div>
+        <h2 id="loja-title">A Empório da Música</h2>
+        <hr class="rule">
+        <p>A Empório da Música é uma loja especializada em instrumentos musicais, fundada em 2008 em Campo Grande, Mato Grosso do Sul. Com mais de 15 anos de atuação no mercado, somos referência regional na venda de instrumentos para músicos iniciantes, intermediários e profissionais.</p>
+        <p>Nossa missão é democratizar o acesso a instrumentos musicais de qualidade na região Centro-Oeste, oferecendo atendimento especializado e preços competitivos, contribuindo para o desenvolvimento cultural e musical da comunidade.</p>
+        <div class="note-box">
+          <p>Não comercializamos acessórios como cordas, palhetas, cabos, cases, pedais ou amplificadores.</p>
+        </div>
+      </div>
+      <div>
+        <h3>Horário de funcionamento</h3>
+        <div class="table-wrap" style="margin-top:12px">
+          <table>
+            <thead><tr><th scope="col">Dia</th><th scope="col">Horário</th></tr></thead>
+            <tbody>
+              <tr><td>Segunda a Sexta-feira</td><td>09:00 às 18:00</td></tr>
+              <tr><td>Sábado</td><td>09:00 às 13:00</td></tr>
+              <tr><td>Domingo e Feriados</td><td>Fechado</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 style="margin-top:32px">Endereço e contato</h3>
+        <p style="margin-top:10px">Rua 14 de Maio, 3200 — Centro<br>Campo Grande – MS · CEP 79202-333</p>
+        <p style="margin-top:8px">Telefone / WhatsApp: <a href="tel:+556733414444">(67) 3341-4444</a><br>E-mail: <a href="mailto:contato@emporiodamusica.com.br">contato@emporiodamusica.com.br</a></p>
+      </div>
+    </div>
+  </section>
 </main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <strong>EMPÓRIO DA MÚSICA</strong>
+        <em>Sua música começa aqui.</em>
+        <p style="margin-top:14px">Empório da Música Instrumentos Musicais Ltda.<br>CNPJ 12.345.678/0001-90</p>
+      </div>
+      <nav aria-label="Políticas">
+        <p class="footer-title">Políticas</p>
+        <ul>
+          <li><a href="/politicas#pagamento">Formas de pagamento</a></li>
+          <li><a href="/politicas#trocas-e-devolucoes">Trocas, devoluções e reembolso</a></li>
+          <li><a href="/politicas#frete-e-entregas">Frete e entregas</a></li>
+          <li><a href="/politicas#garantia">Garantia</a></li>
+          <li><a href="/politicas#promocoes">Promoções</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Privacidade e termos">
+        <p class="footer-title">Privacidade</p>
+        <ul>
+          <li><a href="/privacidade">Privacidade e LGPD</a></li>
+          <li><a href="/privacidade#cookies">Cookies e armazenamento</a></li>
+          <li><a href="/termos">Termos de uso</a></li>
+          <li><button class="linklike" data-open-consent>Preferências de privacidade</button></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-legal">
+      <span>© Empório da Música · Rua 14 de Maio, 3200 · Campo Grande – MS</span>
+      <span>Loja fictícia: projeto demonstrativo de case técnico. Dados de exemplo.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/site.js?v=2"></script>
+<script type="module" src="/assets/hero.js?v=2"></script>
 <script>
-  const log = document.getElementById("log");
-  const form = document.getElementById("form");
-  const input = document.getElementById("text");
-
-  function newSessionId() { return "web-" + crypto.randomUUID(); }
-  let sessionId;
-  try { sessionId = localStorage.getItem("emporio_session") || newSessionId(); localStorage.setItem("emporio_session", sessionId); }
-  catch { sessionId = newSessionId(); }
-
-  // Escape first, then allow only **bold** from the model's Markdown.
-  function render(text) {
-    const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  }
-
-  function add(text, cls) {
-    const div = document.createElement("div");
-    div.className = "msg " + cls;
-    div.innerHTML = render(text);
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
-    return div;
-  }
-
-  function addTrace(trace) {
-    if (!trace || !trace.length) return;
-    const div = document.createElement("div");
-    div.className = "trace";
-    div.textContent = "consultou: " + trace.map(t => t.tool).join(", ");
-    log.appendChild(div);
-  }
-
-  add("Oi! Eu sou a Lia, da Empório da Música. Posso ajudar com instrumentos, preços, pedidos, trocas, frete e pagamento. 🎸", "bot");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const message = input.value.trim();
-    if (!message) return;
-    input.value = "";
-    add(message, "user");
-    const pending = add("digitando...", "bot pending");
-    form.querySelector("button").disabled = true;
-    try {
-      const res = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, message }) });
-      const data = await res.json();
-      pending.remove();
-      add(data.reply || data.error || "Erro inesperado.", "bot");
-      addTrace(data.trace);
-    } catch {
-      pending.textContent = "Não consegui conectar. Tente de novo.";
-    } finally {
-      form.querySelector("button").disabled = false;
-      input.focus();
-    }
-  });
-
-  document.getElementById("reset").addEventListener("click", async () => {
-    await fetch("/api/reset", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ session_id: sessionId }) });
-    sessionId = newSessionId();
-    try { localStorage.setItem("emporio_session", sessionId); } catch {}
-    log.innerHTML = "";
-    add("Conversa reiniciada. Como posso ajudar?", "bot");
-  });
+  // Featured products and categories, from the store data (/api/home).
+  (async () => {
+    const data = await window.EmporioHome;
+    const tbody = document.querySelector("[data-featured]");
+    const cats = document.querySelector("[data-categories]");
+    if (!data) { tbody.innerHTML = '<tr><td colspan="5">Não foi possível carregar os destaques. Pergunte para a Lia.</td></tr>'; return; }
+    const brl = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    tbody.innerHTML = data.featured.map((p) => {
+      const WOOD = { Ash: "freixo", Alder: "amieiro", Mahogany: "mogno", Maple: "maple", Basswood: "basswood", Spruce: "spruce" };
+      const COLOR = { Black: "preto", Red: "vermelho", Blue: "azul", Natural: "natural", "Wine Red": "vinho" };
+      const s = p.specs || {};
+      const strings = s.strings === "steel" ? "cordas de aço" : s.strings === "nylon" ? "cordas de nylon"
+        : s.strings ? `${s.strings} cordas` : null;
+      const specs = [
+        s.top ? `tampo ${s.top}` : s.body ? `corpo em ${WOOD[s.body] || s.body}` : s.keys ? `${s.keys} teclas` : s.pieces ? `${s.pieces} peças` : null,
+        strings,
+        s.color ? (COLOR[s.color] || s.color) : null,
+      ].filter(Boolean).join(" · ");
+      const price = p.promo_price != null
+        ? `<span class="price-old">${brl(p.original_price)}</span><span class="price">${brl(p.promo_price)}</span><span class="tag-promo">${esc(p.promotion)} −${p.discount_percent}%</span>`
+        : `<span class="price">${brl(p.price)}</span><span class="price-note">${brl(p.pix_price)} no PIX</span>`;
+      const stock = p.low_stock ? `<span class="stock-low">${esc(p.low_stock[0].toUpperCase() + p.low_stock.slice(1))}</span>` : "Disponível";
+      const ask = esc(`Quero saber mais sobre o ${p.name}`);
+      return `<tr>
+        <td><div class="product-name">${esc(p.name)}</div><div class="product-specs">${esc(specs)}</div></td>
+        <td data-label="Categoria">${esc(p.category)}</td>
+        <td class="num" data-label="Preço">${price}</td>
+        <td data-label="Estoque">${stock}</td>
+        <td><button class="btn btn-ghost btn-small" data-ask="${ask}">Perguntar à Lia</button></td>
+      </tr>`;
+    }).join("");
+    cats.innerHTML = data.categories.map((c) => {
+      const label = c.available ? `${c.available} disponíveis` : "sob consulta";
+      const ask = esc(c.available ? `Quais opções de ${c.name} vocês têm disponíveis?` : `Vocês têm ${c.name}?`);
+      return `<li><button data-ask="${ask}"><span class="cat-name">${esc(c.name)}</span><span class="cat-count">${label}</span></button></li>`;
+    }).join("");
+  })();
 </script>
 </body>
 </html>
