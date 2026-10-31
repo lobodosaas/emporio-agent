@@ -12,6 +12,21 @@ The site follows the visual language of the store's own policy manual: navy head
 
 The agent talks to customers in **Brazilian Portuguese** (the store's language). Code, docs and this README are in English.
 
+## Quick start (2 minutes)
+
+**Just look:** open https://emporio-agent.gulemes19.workers.dev and click "Fale com a Lia".
+
+**Run it yourself with your own API key** (needs [uv](https://docs.astral.sh/uv/getting-started/installation/); uv fetches Python and the dependencies):
+
+```bash
+git clone https://github.com/lobodosaas/emporio-agent && cd emporio-agent
+cp .env.example .env      # Windows: copy .env.example .env
+# edit .env and uncomment ONE line: ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY or DEEPSEEK_API_KEY
+uv run --group local python -m local.server
+```
+
+Open http://localhost:8787. The same website and agent run on your machine, with no Cloudflare account. Other ways to run it are in [Running it](#running-it).
+
 ---
 
 ## What it does
