@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Empório da Música · Atendimento</title>
+<link rel="icon" href="data:,">
 <style>
   :root { --bg:#f6f4ef; --card:#fff; --ink:#1d2a36; --muted:#6b7680; --brand:#1b4f72; --accent:#f0a030; --me:#1b4f72; --bot:#eef2f5; }
   * { box-sizing: border-box; }
@@ -50,10 +51,16 @@
   try { sessionId = localStorage.getItem("emporio_session") || newSessionId(); localStorage.setItem("emporio_session", sessionId); }
   catch { sessionId = newSessionId(); }
 
+  // Escape first, then allow only **bold** from the model's Markdown.
+  function render(text) {
+    const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  }
+
   function add(text, cls) {
     const div = document.createElement("div");
     div.className = "msg " + cls;
-    div.textContent = text;
+    div.innerHTML = render(text);
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
     return div;
