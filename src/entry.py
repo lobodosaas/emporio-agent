@@ -37,8 +37,9 @@ def escape_chat(value):
     Customer text is rendered as an inline code span (no Markdown links or
     formatting), with mentions and URLs broken so nothing becomes clickable.
     """
-    text = str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    text = text.replace("`", "'").replace("@", "@​").replace("://", ":/​/")
+    text = " ".join(str(value).split())  # newlines/tabs/U+2028 would close the code span
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    text = text.replace("`", "'").replace("@", "@​").replace("://", ":/​/").replace(".", ".​")
     return f"`{text}`"
 
 

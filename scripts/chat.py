@@ -17,7 +17,8 @@ def post(base_url, path, payload):
     request = urllib.request.Request(
         base_url.rstrip("/") + path,
         data=json.dumps(payload).encode(),
-        headers={"content-type": "application/json"},
+        # Cloudflare's browser integrity check rejects the default Python-urllib agent (error 1010).
+        headers={"content-type": "application/json", "user-agent": "emporio-agent-cli/0.1"},
         method="POST",
     )
     try:
