@@ -26,6 +26,8 @@ The agent talks to customers in **Brazilian Portuguese** (the store's language).
 | Accessories (strings, cases, amps...) | Explains the store only sells instruments (manual §1, §7.1) |
 | Anything unrelated / prompt injection | Politely declines and steers back |
 
+A full check of the delivery against the case brief, with screenshots of the four suggested scenarios on the live site, is in [`docs/case-verification.md`](docs/case-verification.md).
+
 See [`examples/`](examples) for 5 real transcripts, including two non-trivial ones:
 - [04: return request](examples/04-return-policy-with-order.md): the agent verifies the order, compares the delivery date with the 7-day and 30-day rules and escalates to a human.
 - [05: purchase intent](examples/05-purchase-intent-lead.md): the agent checks the 12x installment rule against the price and registers a lead.
@@ -164,7 +166,7 @@ uv run python scripts/chat.py -m "Quanto custa o Takamine GD20?" -m "e no pix?" 
 uv run --group local pytest
 ```
 
-36 tests cover:
+38 tests cover:
 - catalog search, promotion and PIX rules, and order identity checks (including brute-force-style inputs);
 - every policy topic, and the PDF → web page parser (with a check that every word of the manual is published);
 - the agent loop: tool round trip, malformed arguments, step limit, LLM failure, history cap;
